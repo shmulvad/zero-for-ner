@@ -1,6 +1,6 @@
 # CrossNER and Word Embeddings
 
-## CrossNER pickle and 
+## CrossNER pickle
 
 The file [`CrossNER_NOUN_PRON.pickle`](./CrossNER_NOUN_PRON.pickle) is a pickled file containing a dictionary of dictionaries storing the nouns and pronouns from different domains. Below is some sample code showing how to read it and the structure:
 
