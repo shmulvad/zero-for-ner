@@ -6,7 +6,7 @@ The file [`CrossNER_NOUN_PRON.pickle`](./CrossNER_NOUN_PRON.pickle) is a pickled
 
 ```python
 >>> import pickle
->>> with open(`CrossNER_NOUN_PRON.pickle`, 'rb') as f:
+>>> with open('CrossNER_NOUN_PRON.pickle', 'rb') as f:
 >>> 	ner_dict = pickle.load(f)
 >>> 
 >>> ner_dict.keys()
@@ -54,7 +54,7 @@ def read_embeddings(embedding_file: str) -> Dict[str, np.ndarray]:
     return word_embeddings
     
     
-word_embeddings = read_embeddings('embeddings.txt')
+word_embeddings = read_embeddings('embeddings-conceptnet.txt')
 ```
 
 where `word_embeddings` is now a dictionary that can be queried by i.e. `word_embeddings['autoencoders']` to get the word embeddings.
