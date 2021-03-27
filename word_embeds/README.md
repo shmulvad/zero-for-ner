@@ -24,7 +24,7 @@ Here is some sample code to loop over the obtained dictionary:
 ```python
 for domain in ner_dict.keys():
     for pos in ner_dict[domain].keys():
-        for word_info in ner_dict[topic][pos]:
+        for word_info in ner_dict[domain][pos]:
             # Do something here
             # word_info is a list of length 3 similar to ['model', 'NOUN', 'I-algorithm']
 ```
@@ -32,7 +32,7 @@ for domain in ner_dict.keys():
 
 ## Word Embeddings
 
-The word embeddings are stored in `embeddings-[SOURCE NAME].txt`. At the moment, ConceptNet and GloVe have been used as sources. They are stored in a similar format as i.e. GloVe (see below). This means each line contains the word at first and then 300 numbers representing the word vector. Based on the pickled file from CrossNER and the label words, there are 10545 embeddings at the moment.
+The word embeddings are stored in `embeddings-[SOURCE NAME].txt`. At the moment, ConceptNet and GloVe have been used as sources. They are stored in a similar format as i.e. GloVe (see below). This means each line contains the word at first and then 300 numbers representing the word vector. Based on the pickled file from CrossNER and the label words, there are 10545 embeddings at the moment. Note that multiword tokens like `"political party"` is saved as `"political_party"`.
 
 ```text
 model 0.107 0.02 0.0305 ...
