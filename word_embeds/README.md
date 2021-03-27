@@ -24,19 +24,20 @@ Here is some sample code to loop over the obtained dictionary:
 ```python
 for domain in ner_dict.keys():
     for pos in ner_dict[domain].keys():
-        for word_tuple in ner_dict[topic][pos]:
+        for word_info in ner_dict[topic][pos]:
             # Do something here
+            # word_info is a list of length 3 similar to ['model', 'NOUN', 'I-algorithm']
 ```
 
 
 ## Word Embeddings
 
-The word embeddings are stored in [`embeddings.txt`](./embeddings.txt) in a similar format as i.e. GloVe (see below). This means each line contains the word at first and then 300 numbers representing the word vector. Based on the pickled file from CrossNER, there are 10533 embeddings at the moment.
+The word embeddings are stored in `embeddings-[SOURCE NAME].txt`. At the moment, ConceptNet and GloVe have been used as sources. They are stored in a similar format as i.e. GloVe (see below). This means each line contains the word at first and then 300 numbers representing the word vector. Based on the pickled file from CrossNER and the label words, there are 10545 embeddings at the moment.
 
 ```text
 model 0.107 0.02 0.0305 ...
 approaches 0.1324 0.0632 -0.0359 ...
-...
+⋮
 ```
 
 Some sample code to read the file to a dictionary `word_embeddings`:
@@ -57,4 +58,4 @@ def read_embeddings(embedding_file: str) -> Dict[str, np.ndarray]:
 word_embeddings = read_embeddings('embeddings-conceptnet.txt')
 ```
 
-where `word_embeddings` is now a dictionary that can be queried by i.e. `word_embeddings['autoencoders']` to get the word embeddings.
+where `word_embeddings` is now a dictionary that can be queried by i.e. `word_embeddings['autoencoders']` to get the 300 dimensional word embedding.
