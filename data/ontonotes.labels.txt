@@ -1,0 +1,18 @@
+ordinal
+percent
+quantity
+product
+language
+work of art
+time
+nationality religious political group
+cardinal
+organisation
+date
+event
+money
+location
+country city state
+person
+facility
+law

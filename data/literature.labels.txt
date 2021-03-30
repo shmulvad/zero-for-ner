@@ -1,0 +1,12 @@
+book
+writer
+award
+poem
+event
+magazine
+person
+location
+organization
+country
+miscellaneous
+literary genre
