@@ -215,7 +215,6 @@ class Trainer(object):
                     best_f1, best_results, best_reports = dev_results["f1"], test_results, test_report
                     dozen_path, luke_path, rgcn_path = get_saved_paths(self.args, tag="best")
                     torch.save(model.luke.state_dict(), luke_path)
-                    torch.save(model.rgcn.state_dict(), rgcn_path)
                     torch.save(model.state_dict(), dozen_path)
 
                     save_json(best_results, os.path.join(self.args.output_dir, self.args.exp_name, "best_results.json"))
@@ -224,7 +223,6 @@ class Trainer(object):
                 logger.info("Saving the model checkpoint to %s", self.args.output_dir)
                 dozen_path, luke_path, rgcn_path = get_saved_paths(self.args, tag=global_step)
                 torch.save(model.luke.state_dict(), luke_path)
-                torch.save(model.rgcn.state_dict(), rgcn_path)
                 torch.save(model.state_dict(), dozen_path)
 
                 epoch += 1
