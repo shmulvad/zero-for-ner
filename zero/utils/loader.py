@@ -1,5 +1,4 @@
 import logging
-from dgl import DGLGraph
 import pandas as pd
 import torch
 from torch.utils.data import DataLoader, RandomSampler
