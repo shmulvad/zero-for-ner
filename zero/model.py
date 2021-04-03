@@ -92,6 +92,9 @@ class Zero(nn.Module):
 
         # feature_vector = (batch_size, #words + #entities, luke_hidden_state * 3 + rgcn_hidden_state * 3)
         feature_vector = self.fcn(feature_vector)
+
+        print(padded_domain_features.shape)
+
         logits = self.zero_shot_classification(feature_vector, padded_domain_features, domain_mask,
                                                batch_size, max_domain_labels)
 
@@ -106,8 +109,8 @@ class Zero(nn.Module):
         domain_vector = padded_domain_features.transpose(-1, -2)
         outputs = torch.matmul(feature_vector, domain_vector)
 
-        cosine_similarity = nn.CosineSimilarity(dim=0, eps=1e-6)
-        cosine_similarity(feature_vector, padded_domain_features)
+        cosine_similarity = nn.CosineSimilarity(dim=1, eps=1e-6)
+        #cosine_similarity(feature_vector, padded_domain_features)
 
 
         domain_mask = domain_mask.unsqueeze(1).expand(batch_size, feature_vector.size(1), max_domain_labels)
