@@ -128,6 +128,6 @@ class Zero(nn.Module):
         total_loss = cos_loss #ner_loss
         reports = {
             "total_loss": total_loss,
-            "ner_loss": ner_loss
+            "ner_loss": cos_loss
         }
         return reports
