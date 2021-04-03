@@ -44,7 +44,9 @@ def load_word_embedding(embedding_path, embed_size, all_entities):
     return word_embeddings
 
 
-def load_domain_features(args, src_domain=None, trg_domain=None, data_dir=None):
+# TODO: Adapt
+def load_domain_features(args, src_domain=None, trg_domain=None, data_dir=None,
+                         embed=None):
     data_dir = args.data_dir if args is not None else data_dir
 
     src_entities = load_text_as_list(os.path.join(data_dir, "{}.entities.txt".format(src_domain)))
@@ -55,7 +57,7 @@ def load_domain_features(args, src_domain=None, trg_domain=None, data_dir=None):
     trg_labels = [x.replace(" ", "_") for x in trg_labels]
 
     all_entities = sorted(list(set(src_entities + trg_entities + src_labels + trg_labels)))
-    embedding_path = os.path.join(data_dir, "embeddings.txt")
+    embedding_path = os.path.join(data_dir, f"embeddings-{embed}.txt")
     word_embedding = load_word_embedding(embedding_path, 300, all_entities)
     src_indices, trg_indices = [all_entities.index(x) for x in src_labels], [all_entities.index(x) for x in trg_labels]
     domain_indices = {

@@ -9,7 +9,7 @@ from luke.utils.entity_vocab import MASK_TOKEN
 
 from zero.model import Zero
 from zero.ner.model import LukeForNamedEntityRecognition
-from zero.utils import set_seed
+from zero.utils import set_seed, CONCEPTNET, GLOVE, COMBINED
 from zero.utils.trainer import Trainer, trainer_args
 
 from zero.utils.evaluator import evaluate
@@ -40,6 +40,9 @@ def cli():
 @click.option("--max-entity-length", default=128)
 @click.option("--max-mention-length", default=25)
 @click.option("--no-word-feature", is_flag=True)
+@click.option("--embed", default=CONCEPTNET,
+              type=click.Choice([CONCEPTNET, GLOVE, COMBINED],
+                                case_sensitive=False))
 @click.option("--no-entity-feature", is_flag=True)
 @click.option("--do-train/--no-train", default=True)
 @click.option("--train-batch-size", default=2)
@@ -57,7 +60,9 @@ def run(common_args, **task_args):
 
     args.train_domains = args.train_domains.split(",")
     domain_label_indices, domain_features, all_entities = \
-        load_domain_features(args, src_domain=args.dev_domain, trg_domain=args.test_domain, data_dir=args.data_dir)
+        load_domain_features(args, src_domain=args.dev_domain,
+                             trg_domain=args.test_domain,
+                             data_dir=args.data_dir, embed=args.embed)
 
     set_seed(args.seed)
 
