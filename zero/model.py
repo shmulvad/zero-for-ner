@@ -107,7 +107,7 @@ class Zero(nn.Module):
         eps = torch.tensor([1e-8]).to("cuda")
         den = torch.max(torch.norm(feature_vector) * torch.norm(domain_vector), eps)
 
-        outputs = outputs/den
+        outputs = 1 - outputs/den
 
         domain_mask = domain_mask.unsqueeze(1).expand(batch_size, feature_vector.size(1), max_domain_labels)
         masked_outputs = outputs.masked_fill((1 - domain_mask).bool(), float('-inf'))
