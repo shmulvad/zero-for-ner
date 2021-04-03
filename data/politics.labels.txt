@@ -1,0 +1,9 @@
+politician
+person
+organization
+political party
+event
+election
+country
+location
+miscellaneous

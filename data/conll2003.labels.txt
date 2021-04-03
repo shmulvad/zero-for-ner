@@ -1,0 +1,4 @@
+person
+organisation
+location
+misc
