@@ -35,6 +35,8 @@ class Zero(nn.Module):
         nn.init.xavier_uniform_(self.null_concept_feature)
         self.fcn = nn.Linear(self.fcn_input, self.fcn_output)
 
+        pdb.set_trace()
+
     def luke_encode(self, tag, **kwargs):
         encoder_outputs = self.luke.encode(kwargs["{}_word_ids".format(tag)],
                                            kwargs["{}_word_segment_ids".format(tag)],
@@ -104,15 +106,14 @@ class Zero(nn.Module):
         domain_vector = padded_domain_features.transpose(-1, -2)
         outputs = torch.matmul(feature_vector, domain_vector)
 
-        eps = torch.tensor([1e-8]).to("cuda")
-        den = torch.max(torch.norm(feature_vector) * torch.norm(domain_vector), eps)
+        cosine_similarity = nn.CosineSimilarity(dim=0, eps=1e-6)
+        cosine_similarity(feature_vector, padded_domain_features)
 
-        outputs = 1 - outputs/den
 
         domain_mask = domain_mask.unsqueeze(1).expand(batch_size, feature_vector.size(1), max_domain_labels)
         masked_outputs = outputs.masked_fill((1 - domain_mask).bool(), float('-inf'))
 
-        #pdb.set_trace()
+        pdb.set_trace()
         return masked_outputs
 
     def forward(self, **kwargs):
