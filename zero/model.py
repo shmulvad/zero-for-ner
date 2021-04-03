@@ -35,7 +35,7 @@ class Zero(nn.Module):
         nn.init.xavier_uniform_(self.null_concept_feature)
         self.fcn = nn.Linear(self.fcn_input, self.fcn_output)
 
-        pdb.set_trace()
+        #pdb.set_trace()
 
     def luke_encode(self, tag, **kwargs):
         encoder_outputs = self.luke.encode(kwargs["{}_word_ids".format(tag)],
@@ -93,8 +93,6 @@ class Zero(nn.Module):
         # feature_vector = (batch_size, #words + #entities, luke_hidden_state * 3 + rgcn_hidden_state * 3)
         feature_vector = self.fcn(feature_vector)
 
-        print(padded_domain_features.shape)
-
         logits = self.zero_shot_classification(feature_vector, padded_domain_features, domain_mask,
                                                batch_size, max_domain_labels)
 
@@ -110,24 +108,24 @@ class Zero(nn.Module):
         outputs = torch.matmul(feature_vector, domain_vector)
 
         cosine_similarity = nn.CosineSimilarity(dim=1, eps=1e-6)
-        #cosine_similarity(feature_vector, padded_domain_features)
 
+        cos_loss = 1 - cosine_similarity(feature_vector.mean(1), padded_domain_features.mean(1))
 
         domain_mask = domain_mask.unsqueeze(1).expand(batch_size, feature_vector.size(1), max_domain_labels)
         masked_outputs = outputs.masked_fill((1 - domain_mask).bool(), float('-inf'))
 
-        pdb.set_trace()
-        return masked_outputs
+        #pdb.set_trace()
+        return masked_outputs, cos_loss.mean()
 
     def forward(self, **kwargs):
-        outputs = self.forward_basic(**kwargs)
+        outputs, cos_loss = self.forward_basic(**kwargs)
         logits, output_size = outputs[0], outputs[1]
         if "source_labels" not in kwargs or kwargs["source_labels"] is None:
             return logits
 
         ner_loss_fn = CrossEntropyLoss(ignore_index=-1)
         ner_loss = ner_loss_fn(logits.view(-1, output_size), kwargs["source_labels"].view(-1))
-        total_loss = ner_loss
+        total_loss = cos_loss #ner_loss 
         reports = {
             "total_loss": total_loss,
             "ner_loss": ner_loss
