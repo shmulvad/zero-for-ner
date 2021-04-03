@@ -124,7 +124,7 @@ class Zero(nn.Module):
             return logits
 
         ner_loss_fn = CrossEntropyLoss(ignore_index=-1)
-        ner_loss = ner_loss_fn(logits.view(-1, output_size), kwargs["source_labels"].view(-1))
+        #ner_loss = ner_loss_fn(logits.view(-1, output_size), kwargs["source_labels"].view(-1))
         total_loss = cos_loss #ner_loss
         reports = {
             "total_loss": total_loss,
