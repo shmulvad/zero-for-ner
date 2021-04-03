@@ -118,7 +118,7 @@ class Zero(nn.Module):
         return masked_outputs, cos_loss.mean()
 
     def forward(self, **kwargs):
-        outputs, cos_loss = self.forward_basic(**kwargs)
+        outputs, _, cos_loss = self.forward_basic(**kwargs)
         logits, output_size = outputs[0], outputs[1]
         if "source_labels" not in kwargs or kwargs["source_labels"] is None:
             return logits
