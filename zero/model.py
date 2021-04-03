@@ -104,12 +104,15 @@ class Zero(nn.Module):
         domain_vector = padded_domain_features.transpose(-1, -2)
         outputs = torch.matmul(feature_vector, domain_vector)
 
-        cosine_similarity = nn.CosineSimilarity(dim=1, eps=1e-6)
+        eps = torch.tensor([1e-8]).to("cuda")
+        den = torch.max(torch.norm(feature_vector) * torch.norm(domain_vector), eps)
+
+        outputs = outputs/den
 
         domain_mask = domain_mask.unsqueeze(1).expand(batch_size, feature_vector.size(1), max_domain_labels)
         masked_outputs = outputs.masked_fill((1 - domain_mask).bool(), float('-inf'))
 
-        pdb.set_trace()
+        #pdb.set_trace()
         return masked_outputs
 
     def forward(self, **kwargs):
