@@ -93,14 +93,14 @@ class Zero(nn.Module):
         # feature_vector = (batch_size, #words + #entities, luke_hidden_state * 3 + rgcn_hidden_state * 3)
         feature_vector = self.fcn(feature_vector)
 
-        logits = self.zero_shot_classification(feature_vector, padded_domain_features, domain_mask,
+        logits, cos_loss = self.zero_shot_classification(feature_vector, padded_domain_features, domain_mask,
                                                batch_size, max_domain_labels)
 
-        return logits, max_domain_labels, word_hidden_states, entity_hidden_states
+        return logits, max_domain_labels, word_hidden_states, entity_hidden_states, cos_loss
 
     def forward_basic(self, **kwargs):
-        logits, max_domain_labels, _, _ = self.encode(**kwargs)
-        return logits, max_domain_labels
+        logits, max_domain_labels, _, _, cos_loss = self.encode(**kwargs)
+        return logits, max_domain_labels, cos_loss
 
     def zero_shot_classification(self, feature_vector, padded_domain_features, domain_mask,
                                  batch_size, max_domain_labels):
@@ -125,7 +125,7 @@ class Zero(nn.Module):
 
         ner_loss_fn = CrossEntropyLoss(ignore_index=-1)
         ner_loss = ner_loss_fn(logits.view(-1, output_size), kwargs["source_labels"].view(-1))
-        total_loss = cos_loss #ner_loss 
+        total_loss = cos_loss #ner_loss
         reports = {
             "total_loss": total_loss,
             "ner_loss": ner_loss
