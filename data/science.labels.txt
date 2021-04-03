@@ -1,0 +1,17 @@
+scientist
+person
+university
+organization
+country
+location
+discipline
+enzyme
+protein
+chemical compound
+chemical element
+event
+astronomical object
+academic journal
+award
+theory
+miscellaneous
