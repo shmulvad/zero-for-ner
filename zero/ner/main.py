@@ -9,7 +9,7 @@ from luke.utils.entity_vocab import MASK_TOKEN
 
 from zero.model import Zero
 from zero.ner.model import LukeForNamedEntityRecognition
-from zero.utils import set_seed, CONCEPTNET, GLOVE, COMBINED
+from zero.utils import set_seed, CONCEPTNET, GLOVE, COMBINED, FASTTEXT
 from zero.utils.trainer import Trainer, trainer_args
 
 from zero.utils.evaluator import evaluate
@@ -41,7 +41,7 @@ def cli():
 @click.option("--max-mention-length", default=25)
 @click.option("--no-word-feature", is_flag=True)
 @click.option("--embed", default=CONCEPTNET,
-              type=click.Choice([CONCEPTNET, GLOVE, COMBINED],
+              type=click.Choice([CONCEPTNET, GLOVE, FASTTEXT, COMBINED],
                                 case_sensitive=False))
 @click.option("--no-entity-feature", is_flag=True)
 @click.option("--do-train/--no-train", default=True)

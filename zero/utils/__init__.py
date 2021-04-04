@@ -5,6 +5,7 @@ import torch
 
 GLOVE = 'glove'
 CONCEPTNET = 'conceptnet'
+FASTTEXT = 'fasttext'
 COMBINED = 'combined'
 
 
