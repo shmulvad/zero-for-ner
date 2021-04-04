@@ -9,6 +9,7 @@ from luke.utils.entity_vocab import MASK_TOKEN
 
 from zero.model import Zero
 from zero.ner.model import LukeForNamedEntityRecognition
+from zero.utils import set_seed
 from zero.utils.trainer import Trainer, trainer_args
 
 from zero.utils.evaluator import evaluate
