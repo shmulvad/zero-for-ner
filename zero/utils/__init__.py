@@ -3,11 +3,6 @@ import random
 import numpy as np
 import torch
 
-GLOVE = 'glove'
-CONCEPTNET = 'conceptnet'
-FASTTEXT = 'fasttext'
-COMBINED = 'combined'
-
 
 def set_seed(seed):
     random.seed(seed)

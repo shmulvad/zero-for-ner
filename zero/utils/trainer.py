@@ -45,7 +45,7 @@ def trainer_args(func):
 
 class Trainer(object):
     def __init__(self, args, model, all_entities, train_source_dataloader, train_target_dataloader,
-                 num_train_steps, step_callback=None):
+                 num_train_steps, step_callback=None, save_model=True):
         self.args = args
         self.model = model
         self.all_entities = all_entities
@@ -53,6 +53,7 @@ class Trainer(object):
         self.train_target_dataloader = train_target_dataloader
         self.num_train_steps = num_train_steps
         self.step_callback = step_callback
+        self.save_model = save_model
 
         self.optimizer = self._create_optimizer(model)
         self.scheduler = self._create_scheduler(self.optimizer)
@@ -213,17 +214,18 @@ class Trainer(object):
                     # Update best f1, reports and results
                     print("Update best model")
                     best_f1, best_results, best_reports = dev_results["f1"], test_results, test_report
-                    dozen_path, luke_path, rgcn_path = get_saved_paths(self.args, tag="best")
-                    torch.save(model.luke.state_dict(), luke_path)
-                    torch.save(model.state_dict(), dozen_path)
-
                     save_json(best_results, os.path.join(self.args.output_dir, self.args.exp_name, "best_results.json"))
                     save_json(best_reports, os.path.join(self.args.output_dir, self.args.exp_name, "best_reports.json"))
+                    if self.save_model:
+                        dozen_path, luke_path, rgcn_path = get_saved_paths(self.args, tag="best")
+                        torch.save(model.luke.state_dict(), luke_path)
+                        torch.save(model.state_dict(), dozen_path)
 
                 logger.info("Saving the model checkpoint to %s", self.args.output_dir)
-                dozen_path, luke_path, rgcn_path = get_saved_paths(self.args, tag=global_step)
-                torch.save(model.luke.state_dict(), luke_path)
-                torch.save(model.state_dict(), dozen_path)
+                if self.save_model:
+                    dozen_path, luke_path, rgcn_path = get_saved_paths(self.args, tag=global_step)
+                    torch.save(model.luke.state_dict(), luke_path)
+                    torch.save(model.state_dict(), dozen_path)
 
                 epoch += 1
 

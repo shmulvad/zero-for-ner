@@ -9,7 +9,6 @@ from luke.utils.entity_vocab import MASK_TOKEN
 
 from zero.model import Zero
 from zero.ner.model import LukeForNamedEntityRecognition
-from zero.utils import set_seed, CONCEPTNET, GLOVE, COMBINED, FASTTEXT
 from zero.utils.trainer import Trainer, trainer_args
 
 from zero.utils.evaluator import evaluate
@@ -18,6 +17,11 @@ from zero.utils.loader import load_domain_features, load_and_cache_examples, \
 from utils_io import *
 
 logger = logging.getLogger(__name__)
+
+GLOVE = 'glove'
+CONCEPTNET = 'conceptnet'
+FASTTEXT = 'fasttext'
+COMBINED = 'combined'
 
 
 def get_exp_name(task_name):
@@ -45,6 +49,7 @@ def cli():
                                 case_sensitive=False))
 @click.option("--no-entity-feature", is_flag=True)
 @click.option("--do-train/--no-train", default=True)
+@click.option("--do-save/--no-save", default=True)
 @click.option("--train-batch-size", default=2)
 @click.option("--num-train-epochs", default=5.0)
 @click.option("--do-eval/--no-eval", default=True)
@@ -90,7 +95,8 @@ def run(common_args, **task_args):
         trainer = Trainer(args, model=dozen, all_entities=all_entities,
                           train_source_dataloader=train_source_dataloader,
                           train_target_dataloader=train_target_dataloader,
-                          num_train_steps=num_train_steps)
+                          num_train_steps=num_train_steps,
+                          save_model=args.do_save)
         trainer.train()
 
         if args.local_rank in (0, -1):
