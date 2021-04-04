@@ -7,8 +7,9 @@ from utils_io import *
 from zero.ner.utils import NERProcessor, convert_examples_to_features
 import numpy as np
 
-
 logger = logging.getLogger(__name__)
+
+WORD_EMBED_SIZE = 300
 
 
 def load_domain_paths(args, domain):
@@ -44,7 +45,6 @@ def load_word_embedding(embedding_path, embed_size, all_entities):
     return word_embeddings
 
 
-# TODO: Adapt
 def load_domain_features(args, src_domain=None, trg_domain=None, data_dir=None,
                          embed=None):
     data_dir = args.data_dir if args is not None else data_dir
@@ -58,7 +58,7 @@ def load_domain_features(args, src_domain=None, trg_domain=None, data_dir=None,
 
     all_entities = sorted(list(set(src_entities + trg_entities + src_labels + trg_labels)))
     embedding_path = os.path.join(data_dir, f"embeddings-{embed}.txt")
-    word_embedding = load_word_embedding(embedding_path, 300, all_entities)
+    word_embedding = load_word_embedding(embedding_path, WORD_EMBED_SIZE, all_entities)
     src_indices, trg_indices = [all_entities.index(x) for x in src_labels], [all_entities.index(x) for x in trg_labels]
     domain_indices = {
         src_domain: src_indices,

@@ -18,10 +18,13 @@ from utils_io import *
 
 logger = logging.getLogger(__name__)
 
-GLOVE = 'glove'
-CONCEPTNET = 'conceptnet'
-FASTTEXT = 'fasttext'
-COMBINED = 'combined'
+GLOVE, CONCEPTNET, FASTTEXT, COMBINED = \
+    'glove', 'conceptnet', 'fasttext', 'combined'
+EMBEDDINGS = [GLOVE, CONCEPTNET, FASTTEXT, COMBINED]
+
+AI, CONLL2003, LIT, MUSIC, POL, SCIENCE = \
+    'ai', 'conll2003', 'literature', 'music', 'politics', 'science'
+DOMAINS = [AI, CONLL2003, LIT, MUSIC, POL, SCIENCE]
 
 
 def get_exp_name(task_name):
@@ -37,16 +40,14 @@ def cli():
 @click.option("--log-dir", default="runs", type=click.Path())
 @click.option("--task-name", default="zero")
 @click.option("--data-dir", default="data", type=click.Path(exists=True))
-@click.option("--train-domains", default="science")
-@click.option("--dev-domain", default="science")
-@click.option("--test-domain", default="music")
+@click.option("--train-domains", default=SCIENCE)
+@click.option("--dev-domain", default=SCIENCE, type=click.Choice(DOMAINS, case_sensitive=False))
+@click.option("--test-domain", default=MUSIC, type=click.Choice(DOMAINS, case_sensitive=False))
+@click.option("--embed", default=CONCEPTNET, type=click.Choice(EMBEDDINGS, case_sensitive=False))
 @click.option("--max-seq-length", default=512)
 @click.option("--max-entity-length", default=128)
 @click.option("--max-mention-length", default=25)
 @click.option("--no-word-feature", is_flag=True)
-@click.option("--embed", default=CONCEPTNET,
-              type=click.Choice([CONCEPTNET, GLOVE, FASTTEXT, COMBINED],
-                                case_sensitive=False))
 @click.option("--no-entity-feature", is_flag=True)
 @click.option("--do-train/--no-train", default=True)
 @click.option("--do-save/--no-save", default=True)
@@ -63,7 +64,9 @@ def run(common_args, **task_args):
     args = Namespace(**common_args)
     args.exp_name = get_exp_name(args.task_name)
 
-    args.train_domains = args.train_domains.split(",")
+    args.train_domains = [domain.lower().strip() for domain in args.train_domains.split(",")]
+    assert all(domain in DOMAINS for domain in args.train_domains), \
+        f'At least one of the domains {args.train_domains} not in {DOMAINS}'
     domain_label_indices, domain_features, all_entities = \
         load_domain_features(args, src_domain=args.dev_domain,
                              trg_domain=args.test_domain,
