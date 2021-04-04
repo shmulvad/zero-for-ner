@@ -1,17 +1,18 @@
 from zero.ner.model import LukeForNamedEntityRecognition
-
+import pdb
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn import CrossEntropyLoss
-import pdb
+
 
 class Zero(nn.Module):
     def __init__(self, args, luke: LukeForNamedEntityRecognition, label_indices, domain_features):
         super(Zero, self).__init__()
         self.args = args
         self.luke = luke
+        self.num_labels = luke.num_labels
         self.src_domain, self.trg_domain = args.dev_domain, args.test_domain
         self.all_domains = sorted(list(set(self.args.train_domains + [self.args.dev_domain] + [self.args.test_domain])))
 
@@ -35,8 +36,9 @@ class Zero(nn.Module):
         nn.init.xavier_uniform_(self.null_concept_feature)
         self.fcn = nn.Linear(self.fcn_input, self.fcn_output)
 
-        #pdb.set_trace()
+        self.classifier = nn.Linear(self.fcn_input, self.num_labels)
 
+        #pdb.set_trace()
     def luke_encode(self, tag, **kwargs):
         encoder_outputs = self.luke.encode(kwargs["{}_word_ids".format(tag)],
                                            kwargs["{}_word_segment_ids".format(tag)],
@@ -91,43 +93,50 @@ class Zero(nn.Module):
         padded_domain_features, domain_mask, max_domain_labels = self.pad_2d(domain_features)
 
         # feature_vector = (batch_size, #words + #entities, luke_hidden_state * 3 + rgcn_hidden_state * 3)
-        feature_vector = self.fcn(feature_vector)
+        fv = self.fcn(feature_vector)
 
-        logits, cos_loss = self.zero_shot_classification(feature_vector, padded_domain_features, domain_mask,
+        xent_logits = self.classifier(feature_vector)
+
+        logits = self.zero_shot_classification(fv, padded_domain_features, domain_mask,
                                                batch_size, max_domain_labels)
 
-        return logits, max_domain_labels, word_hidden_states, entity_hidden_states, cos_loss
+        return logits, max_domain_labels, word_hidden_states, entity_hidden_states, xent_logits
 
     def forward_basic(self, **kwargs):
-        logits, max_domain_labels, _, _, cos_loss = self.encode(**kwargs)
-        return logits, max_domain_labels, cos_loss
+        logits, max_domain_labels, _, _, xent_logits = self.encode(**kwargs)
+        return logits, max_domain_labels, xent_logits
 
     def zero_shot_classification(self, feature_vector, padded_domain_features, domain_mask,
                                  batch_size, max_domain_labels):
         domain_vector = padded_domain_features.transpose(-1, -2)
         outputs = torch.matmul(feature_vector, domain_vector)
-
-        cosine_similarity = nn.CosineSimilarity(dim=1, eps=1e-6)
-
-        cos_loss = 1 - cosine_similarity(feature_vector.mean(1), padded_domain_features.mean(1))
-
         domain_mask = domain_mask.unsqueeze(1).expand(batch_size, feature_vector.size(1), max_domain_labels)
         masked_outputs = outputs.masked_fill((1 - domain_mask).bool(), float('-inf'))
 
-        #pdb.set_trace()
-        return masked_outputs, cos_loss.mean()
+        return masked_outputs
 
     def forward(self, **kwargs):
-        outputs, _, cos_loss = self.forward_basic(**kwargs)
-        logits, output_size = outputs[0], outputs[1]
+        outputs, max_domain_labels, xent_logits = self.forward_basic(**kwargs)
+        
+        logits, output_size = outputs, max_domain_labels
         if "source_labels" not in kwargs or kwargs["source_labels"] is None:
             return logits
 
+        
         ner_loss_fn = CrossEntropyLoss(ignore_index=-1)
-        #ner_loss = ner_loss_fn(logits.view(-1, output_size), kwargs["source_labels"].view(-1))
-        total_loss = cos_loss #ner_loss
+        ner_loss = ner_loss_fn(logits.view(-1, output_size), kwargs["source_labels"].view(-1))
+        
+        xent_loss = ner_loss_fn(xent_logits.view(-1, self.num_labels), kwargs["source_labels"].view(-1)) #loss using labels provided
+
+        #pdb.set_trace()
+
+        beta = 0.5
+
+        total_loss = beta * ner_loss + (1 - beta) * xent_loss
         reports = {
             "total_loss": total_loss,
-            "ner_loss": cos_loss
+            "ner_loss": ner_loss
+            #"xent_loss": xent_loss,
         }
+        #pdb.set_trace()
         return reports
