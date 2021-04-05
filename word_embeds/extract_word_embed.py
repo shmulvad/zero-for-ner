@@ -4,19 +4,16 @@ import os
 from os.path import dirname, abspath
 import csv
 
-import gensim
 import gensim.downloader as api
 import pandas as pd
 import numpy as np
+import click
 
-CONCEPTNET = 'Conceptnet'
-GLOVE = 'GloVe'
-WORD2VEC = 'Word2Vec'
-FAST_TEXT = 'FastText'
-
-### Set this constant based on which word embedding you want to start from ###
-EMBED = GLOVE
-
+CONCEPTNET = 'conceptnet'
+GLOVE = 'glove'
+WORD2VEC = 'word2vec'
+FAST_TEXT = 'fasttext'
+EMBEDDINGS = [CONCEPTNET, GLOVE, WORD2VEC, FAST_TEXT]
 
 CUR_DIR = dirname(abspath(__file__))
 NER_FILE = os.path.join(CUR_DIR, 'CrossNER_NOUN_PRON.pickle')
@@ -67,11 +64,10 @@ ADDITIONAL_WORDS = [
     'writer'
 ]
 
-prefix = '/c/en/' if EMBED == CONCEPTNET else ''
-embedding_file = WORD_EMBED_TO_FILE[EMBED]
-word_embeddings = api.load(embedding_file)
-word_matrix = np.array(word_embeddings.wv.syn0)
-avg_word_vec = np.mean(word_matrix, axis=0)
+# Global variables
+prefix = None
+word_embeddings = None
+avg_word_vec = None
 
 
 def get_word_embed(word):
@@ -133,7 +129,7 @@ def to_textfile_line(word: str, vec: np.ndarray) -> str:
     Takes a word and its corresponding vector and returns a string
     representing the output to the text file
     '''
-    return f'{word} {" ".join([str(num) for num in vec])}\n'
+    return f'{word} {" ".join([f'{num:6f}' for num in vec])}\n'
 
 
 def read_embeddings(embedding_file: str) -> Dict[str, np.ndarray]:
@@ -146,13 +142,28 @@ def read_embeddings(embedding_file: str) -> Dict[str, np.ndarray]:
     return embeddings_index
 
 
-def main():
+@click.command()
+@click.option('--embed', type=click.Choice(EMBEDDINGS, case_sensitive=False),
+              required=True)
+def main(embed: str):
     with open(NER_FILE, 'rb') as f:
         ner_dict = pickle.load(f)
 
+    global word_embeddings
+    word_embeddings = api.load(WORD_EMBED_TO_FILE[embed])
+
+    vocab = word_embeddings.index_to_key
+    word_matrix = np.array([word_embeddings[token] for token in vocab])
+
+    global avg_word_vec
+    avg_word_vec = np.mean(word_matrix, axis=0)
+
+    global prefix
+    prefix = '/c/en/' if embed == CONCEPTNET else ''
+
     all_words = transform_ner(ner_dict)
     lines = [to_textfile_line(word, vec) for word, vec in all_words.items()]
-    filename = f'embeddings-{EMBED.lower()}.txt'
+    filename = f'embeddings-{embed}.txt'
     with open(os.path.join(CUR_DIR, filename), 'a') as f:
         f.writelines(lines)
 
