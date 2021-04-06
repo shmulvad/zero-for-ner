@@ -25,7 +25,7 @@ EMBEDDINGS = [GLOVE, CONCEPTNET, FASTTEXT, COMBINED]
 
 AI, CONLL2003, LIT, MUSIC, POL, SCIENCE = \
     'ai', 'conll2003', 'literature', 'music', 'politics', 'science'
-DOMAINS = [AI, CONLL2003, LIT, MUSIC, POL, SCIENCE]
+DOMAINS = [AI, LIT, MUSIC, POL, SCIENCE]
 
 
 def get_exp_name(task_name):
@@ -136,11 +136,27 @@ def run(common_args, **task_args):
         results.update({f"test_{k}": v for k, v in evaluate(args, zero, "test", test_output_file).items()})
 
         if args.eval_all:
-            for domain in DOMAINS:
-                print(f'\n\nEvaluating {domain}\n\n')
-                evals = evaluate(args, zero, "test", test_output_file,
-                                 test_domain_forced=domain).items()
-                results.update({f"test_{domain}_{k}": v for k, v in evals})
+            for test_domain in DOMAINS:
+                args.test_domain = test_domain
+
+                domain_label_indices, domain_features, all_entities = \
+                    load_domain_features(args, src_domain=args.dev_domain,
+                                         trg_domain=test_domain,
+                                         data_dir=args.data_dir,
+                                         embed=args.embed)
+                _, _, _, processor_new = load_and_cache_examples(args, "train", all_entities)
+
+                luke = LukeForNamedEntityRecognition(args, len(processor_new.get_labels()))
+                luke.load_state_dict(torch.load(luke_path, map_location="cpu"))
+                luke.to(args.device)
+
+                zero = Zero(args, luke, domain_label_indices, domain_features)
+                zero.load_state_dict(torch.load(dozen_path, map_location="cpu"))
+                zero.to(args.device)
+
+                print(f'\n\nEvaluating {test_domain}\n\n')
+                evals = evaluate(args, zero, "test", test_output_file).items()
+                results.update({f"test_{test_domain}_{k}": v for k, v in evals})
 
     logger.info("Results: %s", json.dumps(results, indent=2, sort_keys=True))
     args.experiment.log_metrics(results)

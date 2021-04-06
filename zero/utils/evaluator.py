@@ -7,11 +7,9 @@ from tqdm import tqdm
 from zero.utils.loader import load_and_cache_examples
 
 
-def evaluate(args, model, fold, all_entities, output_file=None, return_report=False,
-             test_domain_forced=None):
+def evaluate(args, model, fold, all_entities, output_file=None, return_report=False):
     dataloader, examples, features, processor = \
-        load_and_cache_examples(args, fold, all_entities,
-                                test_domain_forced=test_domain_forced)
+        load_and_cache_examples(args, fold, all_entities)
     domain_label_map = processor.get_domain_labels()
     all_predictions = defaultdict(dict)
 
