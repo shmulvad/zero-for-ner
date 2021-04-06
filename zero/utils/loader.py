@@ -114,9 +114,13 @@ def get_saved_paths(args, tag=None):
     return dozen_path, luke_path, rgcn_path
 
 
-def load_and_cache_examples(args, fold, inter_domain_entities, random_sampling=True):
+def load_and_cache_examples(args, fold, inter_domain_entities, random_sampling=True,
+                            test_domain_forced=None):
     if args.local_rank not in (-1, 0) and fold == "train":
         torch.distributed.barrier()
+
+    if test_domain_forced:
+        args.test_domain = test_domain_forced
 
     processor = NERProcessor(os.path.join(args.data_dir, "ner"),
                              args.train_domains, args.dev_domain, args.test_domain)

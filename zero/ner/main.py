@@ -55,6 +55,7 @@ def cli():
 @click.option("--train-batch-size", default=2)
 @click.option("--num-train-epochs", default=5.0)
 @click.option("--do-eval/--no-eval", default=True)
+@click.option("--eval-all/--one-eval", default=False)
 @click.option("--eval-batch-size", default=32)
 @click.option("--train-on-dev-set", is_flag=True)
 @click.option("--seed", default=35)
@@ -68,6 +69,7 @@ def run(common_args, **task_args):
     args.train_domains = [domain.lower().strip() for domain in args.train_domains.split(",")]
     assert all(domain in DOMAINS for domain in args.train_domains), \
         f'At least one of the domains {args.train_domains} not in {DOMAINS}'
+
     domain_label_indices, domain_features, all_entities = \
         load_domain_features(args, src_domain=args.dev_domain,
                              trg_domain=args.test_domain,
@@ -132,6 +134,13 @@ def run(common_args, **task_args):
         results.update({f"train_{k}": v for k, v in evaluate(args, zero, "train", train_output_file).items()})
         results.update({f"dev_{k}": v for k, v in evaluate(args, zero, "dev", dev_output_file).items()})
         results.update({f"test_{k}": v for k, v in evaluate(args, zero, "test", test_output_file).items()})
+
+        if args.eval_all:
+            for domain in DOMAINS:
+                print(f'\n\nEvaluating {domain}\n\n')
+                evals = evaluate(args, zero, "test", test_output_file,
+                                 test_domain_forced=domain).items()
+                results.update({f"test_{domain}_{k}": v for k, v in evals})
 
     logger.info("Results: %s", json.dumps(results, indent=2, sort_keys=True))
     args.experiment.log_metrics(results)
