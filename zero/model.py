@@ -97,14 +97,22 @@ class Zero(nn.Module):
 
         xent_logits = self.classifier(feature_vector)
 
+        A = fv.mean(1)
+        B = padded_domain_features.mean(1)
+
+        cos_sim = nn.CosineSimilarity(dim=1, eps=1e-08)
+        cos_loss = torch.mean(1 - cos_sim(A, B))
+
+        #pdb.set_trace()
+
         logits = self.zero_shot_classification(fv, padded_domain_features, domain_mask,
                                                batch_size, max_domain_labels)
 
-        return logits, max_domain_labels, word_hidden_states, entity_hidden_states, xent_logits
+        return logits, max_domain_labels, word_hidden_states, entity_hidden_states, xent_logits, cos_loss
 
     def forward_basic(self, **kwargs):
-        logits, max_domain_labels, _, _, xent_logits = self.encode(**kwargs)
-        return logits, max_domain_labels, xent_logits
+        logits, max_domain_labels, _, _, xent_logits, cos_loss = self.encode(**kwargs)
+        return logits, max_domain_labels, xent_logits, cos_loss
 
     def zero_shot_classification(self, feature_vector, padded_domain_features, domain_mask,
                                  batch_size, max_domain_labels):
@@ -116,7 +124,7 @@ class Zero(nn.Module):
         return masked_outputs
 
     def forward(self, **kwargs):
-        outputs, max_domain_labels, xent_logits = self.forward_basic(**kwargs)
+        outputs, max_domain_labels, xent_logits, cos_loss = self.forward_basic(**kwargs)
         
         logits, output_size = outputs, max_domain_labels
         if "source_labels" not in kwargs or kwargs["source_labels"] is None:
@@ -128,11 +136,14 @@ class Zero(nn.Module):
         
         xent_loss = ner_loss_fn(xent_logits.view(-1, self.num_labels), kwargs["source_labels"].view(-1)) #loss using labels provided
 
-        #pdb.set_trace()
-
         beta = 0
 
-        total_loss = beta * ner_loss + (1 - beta) * xent_loss
+        #total_loss = beta * ner_loss + (1 - beta) * xent_loss
+
+        total_loss = cos_loss
+
+        #pdb.set_trace()
+
         reports = {
             "total_loss": total_loss,
             "ner_loss": ner_loss
