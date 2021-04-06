@@ -116,7 +116,7 @@ def run(common_args, **task_args):
     torch.cuda.empty_cache()
 
     if args.do_eval:
-        dozen_path, luke_path, rgcn_path = get_saved_paths(args, tag="latest")
+        dozen_path, luke_path, rgcn_path = get_saved_paths(args, tag="last")
 
         luke = LukeForNamedEntityRecognition(args, len(processor.get_labels()))
         luke.load_state_dict(torch.load(luke_path, map_location="cpu"))
