@@ -140,7 +140,7 @@ class Zero(nn.Module):
 
         #total_loss = beta * ner_loss + (1 - beta) * xent_loss
 
-        total_loss = cos_loss
+        total_loss = ner_loss + cos_loss
 
         #pdb.set_trace()
 
