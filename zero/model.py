@@ -12,7 +12,7 @@ class Zero(nn.Module):
         super(Zero, self).__init__()
         self.args = args
         self.luke = luke
-        self.num_labels = 14 #luke.num_labels
+        self.num_labels = luke.num_labels
         self.src_domain, self.trg_domain = args.dev_domain, args.test_domain
         self.all_domains = sorted(list(set(self.args.train_domains + [self.args.dev_domain] + [self.args.test_domain])))
 
@@ -35,7 +35,6 @@ class Zero(nn.Module):
         self.null_concept_feature = nn.Parameter(torch.FloatTensor(1, self.fcn_output)).to(self.args.device)
         nn.init.xavier_uniform_(self.null_concept_feature)
         self.fcn = nn.Linear(self.fcn_input, self.fcn_output)
-
         self.classifier = nn.Linear(self.fcn_input, self.num_labels)
 
         #pdb.set_trace()
@@ -95,40 +94,16 @@ class Zero(nn.Module):
 
         # feature_vector = (batch_size, #words + #entities, luke_hidden_state * 3 + rgcn_hidden_state * 3)
         fv = self.fcn(feature_vector)
-
         xent_logits = self.classifier(feature_vector)
-
-        A = fv.mean(1)
-        B = padded_domain_features.mean(1)
-
-        cos_sim = nn.CosineSimilarity(dim=1, eps=1e-08)
-        cos_loss = torch.mean(1 - cos_sim(A, B))
-
-        #pdb.set_trace()
 
         logits = self.zero_shot_classification(fv, padded_domain_features, domain_mask,
                                                batch_size, max_domain_labels)
 
-        return logits, max_domain_labels, word_hidden_states, entity_hidden_states, xent_logits, cos_loss
+        return logits, max_domain_labels, word_hidden_states, entity_hidden_states, xent_logits
 
     def forward_basic(self, **kwargs):
-        logits, max_domain_labels, _, _, xent_logits, cos_loss = self.encode(**kwargs)
-        return logits, max_domain_labels, xent_logits, cos_loss
-
-    def luke_forward(self, tag, **kwargs):
-
-        #pdb.set_trace()
-        loss = self.luke.forward(kwargs["{}_word_ids".format(tag)],
-                                           kwargs["{}_word_segment_ids".format(tag)],
-                                           kwargs["{}_word_attention_mask".format(tag)],
-                                           kwargs["{}_entity_start_positions".format(tag)],
-                                           kwargs["{}_entity_end_positions".format(tag)],
-                                           kwargs["{}_entity_ids".format(tag)],
-                                           kwargs["{}_entity_position_ids".format(tag)],
-                                           kwargs["{}_entity_segment_ids".format(tag)],
-                                           kwargs["{}_entity_attention_mask".format(tag)],
-                                           kwargs["{}_labels".format(tag)])
-        return loss
+        logits, max_domain_labels, _, _, xent_logits = self.encode(**kwargs)
+        return logits, max_domain_labels, xent_logits
 
     def zero_shot_classification(self, feature_vector, padded_domain_features, domain_mask,
                                  batch_size, max_domain_labels):
@@ -140,50 +115,28 @@ class Zero(nn.Module):
 
         #pdb.set_trace()
         return masked_outputs
-    '''
+
+    #DOMAIN_LIST = ["ai", "literature", "music", "politics", "science", "conll2003", "ontonotes"]
+
     def forward(self, **kwargs):
-        outputs, max_domain_labels, xent_logits, cos_loss = self.forward_basic(**kwargs)
+        outputs, max_domain_labels, xent_logits = self.forward_basic(**kwargs)
         
-        luke_loss = self.luke_forward("source", **kwargs)
-
-
         logits, output_size = outputs, max_domain_labels
         if "source_labels" not in kwargs or kwargs["source_labels"] is None:
-            return logits
-
+            return xent_logits
 
         ner_loss_fn = CrossEntropyLoss(ignore_index=-1)
-        ner_loss = ner_loss_fn(logits.view(-1, output_size), kwargs["source_labels"].view(-1))
-        
+        #ner_loss = ner_loss_fn(logits.view(-1, output_size), kwargs["source_labels"].view(-1))
         xent_loss = ner_loss_fn(xent_logits.view(-1, self.num_labels), kwargs["source_labels"].view(-1)) #loss using labels provided
 
-        beta = 0.5
-
-        #total_loss = beta * ner_loss + (1 - beta) * xent_loss
-        #total_loss = xent_loss
-        total_loss = luke_loss[0]
+        total_loss = xent_loss
 
         #pdb.set_trace()
         
         reports = {
             "total_loss": total_loss,
-            "ner_loss": ner_loss
-            #"xent_loss": xent_loss,
-        }
-        #pdb.set_trace()
-        return reports
-    '''
-
-    def forward(self, **kwargs):
-        
-        luke_loss = self.luke_forward("source", **kwargs)
-
-        total_loss = luke_loss[0]
-
-        #pdb.set_trace()
-        
-        reports = {
-            "total_loss": total_loss,
-        
+          
         }
         return reports
+   
+   

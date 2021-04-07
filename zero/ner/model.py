@@ -51,7 +51,7 @@ class LukeForNamedEntityRecognition(LukeEntityAwareAttentionModel):
         entity_position_ids,
         entity_segment_ids,
         entity_attention_mask,
-        labels,
+        labels=None,
     ):
         encoder_outputs = self.encode(word_ids,
                                       word_segment_ids,
@@ -84,4 +84,5 @@ class LukeForNamedEntityRecognition(LukeEntityAwareAttentionModel):
             return logits
 
         loss_fn = CrossEntropyLoss(ignore_index=-1)
+        #pdb.set_trace()
         return (loss_fn(logits.view(-1, self.num_labels), labels.view(-1)),)

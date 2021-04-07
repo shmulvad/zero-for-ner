@@ -2,7 +2,7 @@ from collections import defaultdict
 import seqeval.metrics
 import torch
 from tqdm import tqdm
-
+import pdb
 
 from zero.utils.loader import load_and_cache_examples
 
@@ -17,17 +17,26 @@ def evaluate(args, model, fold, all_entities, output_file=None, return_report=Fa
         inputs = {"source_" + k: v.to(args.device)
                   if k not in ["domains"] else v for k, v in batch.items()
                   if k != "feature_indices"}
+
         if fold == "train":
             inputs["source_labels"] = None
         with torch.no_grad():
             inputs["eval"] = True
+            
+            #pdb.set_trace()
             logits = model(**inputs)
+
 
         for i, feature_index in enumerate(batch["feature_indices"]):
             feature = features[feature_index.item()]
             for j, span in enumerate(feature.original_entity_spans):
                 if span is not None:
+                    #pdb.set_trace()
+                    
+                    #print(j, span, 'Logits:', logits[i,j].max(dim=0) )
+
                     all_predictions[feature.example_index][span] = logits[i, j].detach().cpu().max(dim=0)
+
 
     assert len(all_predictions) == len(examples)
 
