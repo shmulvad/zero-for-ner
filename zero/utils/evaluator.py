@@ -8,7 +8,8 @@ from zero.utils.loader import load_and_cache_examples
 
 
 def evaluate(args, model, fold, all_entities, output_file=None, return_report=False):
-    dataloader, examples, features, processor = load_and_cache_examples(args, fold, all_entities)
+    dataloader, examples, features, processor = \
+        load_and_cache_examples(args, fold, all_entities)
     domain_label_map = processor.get_domain_labels()
     all_predictions = defaultdict(dict)
 
