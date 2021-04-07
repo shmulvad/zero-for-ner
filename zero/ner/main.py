@@ -20,8 +20,9 @@ from utils_io import *
 logger = logging.getLogger(__name__)
 
 
-def get_exp_name(task_name):
-    return "{}-{}".format(task_name, datetime.now().strftime("%D-%H-%M-%S").replace("/", "_"))
+def get_exp_name(args):
+    return "{}-{}-{}-{}-{}".format(args.task_name, datetime.now().strftime("%D-%H-%M-%S").replace("/", "_"),
+                                   args.dev_domain, args.test_domain, args.n_example_per_label)
 
 
 @click.group(name="ner")
@@ -46,6 +47,7 @@ def cli():
 @click.option("--num-train-epochs", default=5.0)
 @click.option("--do-eval/--no-eval", default=True)
 @click.option("--eval-batch-size", default=32)
+@click.option("--n-example-per-label", default=0)
 @click.option("--train-on-dev-set", is_flag=True)
 @click.option("--seed", default=35)
 @trainer_args
@@ -53,7 +55,7 @@ def cli():
 def run(common_args, **task_args):
     common_args.update(task_args)
     args = Namespace(**common_args)
-    args.exp_name = get_exp_name(args.task_name)
+    args.exp_name = get_exp_name(args)
 
     args.train_domains = args.train_domains.split(",")
     domain_label_indices, domain_features, all_entities = \
@@ -68,7 +70,8 @@ def run(common_args, **task_args):
     mask_emb = entity_emb[args.entity_vocab[MASK_TOKEN]].unsqueeze(0)
     args.model_weights["entity_embeddings.entity_embeddings.weight"] = torch.cat([entity_emb[:1], mask_emb])
 
-    train_source_dataloader, _, _, processor = load_and_cache_examples(args, "train", all_entities)
+    train_source_dataloader, _, _, processor = load_and_cache_examples(args, "train", all_entities,
+                                                                       n_example_per_label=args.n_example_per_label)
     train_target_dataloader, _, _, _ = load_and_cache_examples(args, "test", all_entities)
     results = {}
 
@@ -101,7 +104,7 @@ def run(common_args, **task_args):
     torch.cuda.empty_cache()
 
     if args.do_eval:
-        dozen_path, luke_path, rgcn_path = get_saved_paths(args, tag="latest")
+        dozen_path, luke_path, rgcn_path = get_saved_paths(args, tag="best")
 
         luke = LukeForNamedEntityRecognition(args, len(processor.get_labels()))
         luke.load_state_dict(torch.load(luke_path, map_location="cpu"))
