@@ -140,12 +140,11 @@ class Zero(nn.Module):
 
         #pdb.set_trace()
         return masked_outputs
-    '''
+
     def forward(self, **kwargs):
         outputs, max_domain_labels, xent_logits, cos_loss = self.forward_basic(**kwargs)
         
         luke_loss = self.luke_forward("source", **kwargs)
-
 
         logits, output_size = outputs, max_domain_labels
         if "source_labels" not in kwargs or kwargs["source_labels"] is None:
@@ -161,29 +160,15 @@ class Zero(nn.Module):
 
         #total_loss = beta * ner_loss + (1 - beta) * xent_loss
         #total_loss = xent_loss
+
         total_loss = luke_loss[0]
 
         #pdb.set_trace()
-        
+
         reports = {
             "total_loss": total_loss,
             "ner_loss": ner_loss
             #"xent_loss": xent_loss,
         }
         #pdb.set_trace()
-        return reports
-    '''
-
-    def forward(self, **kwargs):
-        
-        luke_loss = self.luke_forward("source", **kwargs)
-
-        total_loss = luke_loss[0]
-
-        #pdb.set_trace()
-        
-        reports = {
-            "total_loss": total_loss,
-        
-        }
         return reports

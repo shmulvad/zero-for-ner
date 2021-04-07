@@ -129,7 +129,6 @@ class Trainer(object):
                     source_inputs.update(target_inputs)
                     source_inputs["eval"] = False
                     source_inputs["alpha"] = alpha
-                    #pdb.set_trace()
                     outputs = model(**source_inputs)
                     loss = outputs["total_loss"]
                     #pdb.set_trace()

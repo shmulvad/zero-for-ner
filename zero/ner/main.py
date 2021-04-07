@@ -79,7 +79,7 @@ def run(common_args, **task_args):
     if args.do_train:
         pretrained_luke = LukeForNamedEntityRecognition(args, len(processor.get_labels()))
         pretrained_luke.load_state_dict(args.model_weights, strict=False)
-        pretrained_luke.to(args.device)
+        #pretrained_luke.to(args.device)
 
         dozen = Zero(args, pretrained_luke, domain_label_indices, domain_features)
         dozen.to(args.device)
@@ -111,7 +111,7 @@ def run(common_args, **task_args):
 
         luke = LukeForNamedEntityRecognition(args, len(processor.get_labels()))
         luke.load_state_dict(torch.load(luke_path, map_location="cpu"))
-        luke.to(args.device)
+        #luke.to(args.device)
         zero = Zero(args, luke, domain_label_indices, domain_features)
         zero.load_state_dict(torch.load(dozen_path, map_location="cpu"))
         zero.to(args.device)
