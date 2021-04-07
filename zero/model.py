@@ -12,7 +12,7 @@ class Zero(nn.Module):
         super(Zero, self).__init__()
         self.args = args
         self.luke = luke
-        self.num_labels = luke.num_labels
+        self.num_labels = 14 #luke.num_labels
         self.src_domain, self.trg_domain = args.dev_domain, args.test_domain
         self.all_domains = sorted(list(set(self.args.train_domains + [self.args.dev_domain] + [self.args.test_domain])))
 
@@ -77,7 +77,7 @@ class Zero(nn.Module):
         return torch.gather(states, -2, positions.unsqueeze(-1).expand(-1, -1, size))
 
     def encode(self, **kwargs):
-
+        
         word_hidden_states, entity_hidden_states, batch_size, hidden_size = \
             self.luke_encode("source", **kwargs)
 
@@ -85,6 +85,7 @@ class Zero(nn.Module):
 
         start_states = self.gather_states(word_hidden_states, kwargs["source_entity_start_positions"], hidden_size)
         end_states = self.gather_states(word_hidden_states, kwargs["source_entity_end_positions"], hidden_size)
+        
         feature_vector = torch.cat([start_states, end_states, entity_hidden_states], dim=2)
 
         # feature_vector = self.dropout(feature_vector)
@@ -118,9 +119,11 @@ class Zero(nn.Module):
                                  batch_size, max_domain_labels):
         domain_vector = padded_domain_features.transpose(-1, -2)
         outputs = torch.matmul(feature_vector, domain_vector)
+
         domain_mask = domain_mask.unsqueeze(1).expand(batch_size, feature_vector.size(1), max_domain_labels)
         masked_outputs = outputs.masked_fill((1 - domain_mask).bool(), float('-inf'))
 
+        #pdb.set_trace()
         return masked_outputs
 
     def forward(self, **kwargs):
@@ -130,17 +133,18 @@ class Zero(nn.Module):
         if "source_labels" not in kwargs or kwargs["source_labels"] is None:
             return logits
 
-        
+
         ner_loss_fn = CrossEntropyLoss(ignore_index=-1)
         ner_loss = ner_loss_fn(logits.view(-1, output_size), kwargs["source_labels"].view(-1))
         
         xent_loss = ner_loss_fn(xent_logits.view(-1, self.num_labels), kwargs["source_labels"].view(-1)) #loss using labels provided
 
-        beta = 0
+        beta = 0.5
 
         #total_loss = beta * ner_loss + (1 - beta) * xent_loss
+        total_loss = xent_loss
 
-        total_loss = ner_loss + cos_loss
+        #total_loss = ner_loss + cos_loss
 
         #pdb.set_trace()
 
