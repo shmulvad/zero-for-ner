@@ -14,6 +14,7 @@ from zero.utils.loader import get_saved_paths
 
 from zero.utils.evaluator import evaluate
 from utils_io import save_json
+import pdb
 
 
 logger = logging.getLogger(__name__)
@@ -128,8 +129,10 @@ class Trainer(object):
                     source_inputs.update(target_inputs)
                     source_inputs["eval"] = False
                     source_inputs["alpha"] = alpha
+                    #pdb.set_trace()
                     outputs = model(**source_inputs)
                     loss = outputs["total_loss"]
+                    #pdb.set_trace()
                     if self.args.gradient_accumulation_steps > 1:
                         for loss_name, loss_val in outputs.items():
                             outputs[loss_name] = loss_val / self.args.gradient_accumulation_steps

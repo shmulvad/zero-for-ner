@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from torch.nn import CrossEntropyLoss
-
+import pdb
 from luke.model import LukeEntityAwareAttentionModel
 
 
@@ -19,6 +19,7 @@ class LukeForNamedEntityRecognition(LukeEntityAwareAttentionModel):
         else:
             self.classifier = nn.Linear(args.model_config.hidden_size * 3, num_labels)
 
+        #pdb.set_trace()
         self.apply(self.init_weights)
 
     def encode(self, word_ids,
@@ -50,7 +51,7 @@ class LukeForNamedEntityRecognition(LukeEntityAwareAttentionModel):
         entity_position_ids,
         entity_segment_ids,
         entity_attention_mask,
-        labels=None,
+        labels,
     ):
         encoder_outputs = self.encode(word_ids,
                                       word_segment_ids,

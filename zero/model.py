@@ -115,6 +115,21 @@ class Zero(nn.Module):
         logits, max_domain_labels, _, _, xent_logits, cos_loss = self.encode(**kwargs)
         return logits, max_domain_labels, xent_logits, cos_loss
 
+    def luke_forward(self, tag, **kwargs):
+
+        #pdb.set_trace()
+        loss = self.luke.forward(kwargs["{}_word_ids".format(tag)],
+                                           kwargs["{}_word_segment_ids".format(tag)],
+                                           kwargs["{}_word_attention_mask".format(tag)],
+                                           kwargs["{}_entity_start_positions".format(tag)],
+                                           kwargs["{}_entity_end_positions".format(tag)],
+                                           kwargs["{}_entity_ids".format(tag)],
+                                           kwargs["{}_entity_position_ids".format(tag)],
+                                           kwargs["{}_entity_segment_ids".format(tag)],
+                                           kwargs["{}_entity_attention_mask".format(tag)],
+                                           kwargs["{}_labels".format(tag)])
+        return loss
+
     def zero_shot_classification(self, feature_vector, padded_domain_features, domain_mask,
                                  batch_size, max_domain_labels):
         domain_vector = padded_domain_features.transpose(-1, -2)
@@ -129,6 +144,8 @@ class Zero(nn.Module):
     def forward(self, **kwargs):
         outputs, max_domain_labels, xent_logits, cos_loss = self.forward_basic(**kwargs)
         
+        luke_loss = self.luke_forward("source", **kwargs)
+
         logits, output_size = outputs, max_domain_labels
         if "source_labels" not in kwargs or kwargs["source_labels"] is None:
             return logits
@@ -142,9 +159,9 @@ class Zero(nn.Module):
         beta = 0.5
 
         #total_loss = beta * ner_loss + (1 - beta) * xent_loss
-        total_loss = xent_loss
+        #total_loss = xent_loss
 
-        #total_loss = ner_loss + cos_loss
+        total_loss = luke_loss[0]
 
         #pdb.set_trace()
 
