@@ -12,6 +12,4 @@ def set_seed(seed):
 
 
 def is_whitespace(c):
-    if c == " " or c == "\t" or c == "\r" or c == "\n" or ord(c) == 0x202F:
-        return True
-    return False
+    return c in [" ", "\t", "\r", "\n"] or ord(c) == 0x202F
