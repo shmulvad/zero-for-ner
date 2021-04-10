@@ -117,7 +117,8 @@ def load_and_cache_examples(args, fold, inter_domain_entities, random_sampling=T
         torch.distributed.barrier()
 
     processor = NERProcessor(os.path.join(args.data_dir, "ner"),
-                             args.train_domains, args.dev_domain, args.test_domain)
+                             args.train_domains, args.dev_domain, args.test_domain,
+                             seed=args.seed)
     if fold == "train":
         if n_example_per_label == 0:
             examples = processor.get_train_examples()
@@ -160,7 +161,7 @@ def load_and_cache_examples(args, fold, inter_domain_entities, random_sampling=T
         logger.info("Loading features from the cached file %s", cache_file)
         features = torch.load(cache_file)
     else:
-        logger.info("Creating features from the dataset...")
+        logger.info("Creating features from the dataset and save to the cached file %s", cache_file)
 
         features = convert_examples_to_features(
             examples, inter_domain_map, domain_label_map, args.tokenizer, args.max_seq_length, args.max_entity_length, args.max_mention_length

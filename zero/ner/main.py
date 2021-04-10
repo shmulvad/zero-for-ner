@@ -94,7 +94,7 @@ def run(common_args, **task_args):
         if args.local_rank in (0, -1):
             os.makedirs(os.path.join(args.output_dir, args.exp_name), exist_ok=True)
             logger.info("Saving the model checkpoint to %s", args.output_dir)
-            dozen_path, luke_path, rgcn_path = get_saved_paths(args, tag="last")
+            dozen_path, luke_path, rgcn_path = get_saved_paths(args, tag="best")
             torch.save(pretrained_luke.state_dict(), luke_path)
             torch.save(dozen.state_dict(), dozen_path)
 
