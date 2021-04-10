@@ -129,16 +129,16 @@ def run(common_args, **task_args):
         zero.load_state_dict(torch.load(dozen_path, map_location="cpu"))
         zero.to(args.device)
 
-        train_output_file = os.path.join(args.output_dir, "train_predictions.txt")
-        dev_output_file = os.path.join(args.output_dir, "dev_predictions.txt")
-        test_output_file = os.path.join(args.output_dir, "test_predictions.txt")
-        results.update({f"train_{k}": v for k, v in evaluate(args, zero, "train", train_output_file).items()})
-        results.update({f"dev_{k}": v for k, v in evaluate(args, zero, "dev", dev_output_file).items()})
-        results.update({f"test_{k}": v for k, v in evaluate(args, zero, "test", test_output_file).items()})
+        train_output_file = os.path.join(args.output_dir, args.exp_name, "train_predictions.txt")
+        dev_output_file = os.path.join(args.output_dir, args.exp_name, "dev_predictions.txt")
+        test_output_file = os.path.join(args.output_dir, args.exp_name, "test_predictions.txt")
+        results.update({f"train_{k}": v for k, v in evaluate(args, zero, "train", all_entities, train_output_file).items()})
+        results.update({f"dev_{k}": v for k, v in evaluate(args, zero, "dev", all_entities, dev_output_file).items()})
+        results.update({f"test_{k}": v for k, v in evaluate(args, zero, "test", all_entities, test_output_file).items()})
 
     logger.info("Results: %s", json.dumps(results, indent=2, sort_keys=True))
     args.experiment.log_metrics(results)
-    with open(os.path.join(args.output_dir, "results.json"), "w") as f:
+    with open(os.path.join(args.output_dir, args.exp_name, "results.json"), "w") as f:
         json.dump(results, f)
 
     return results
