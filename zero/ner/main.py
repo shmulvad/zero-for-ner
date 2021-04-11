@@ -25,7 +25,7 @@ EMBEDDINGS = [GLOVE, CONCEPTNET, FASTTEXT, COMBINED]
 
 AI, CONLL2003, LIT, MUSIC, POL, SCIENCE = \
     'ai', 'conll2003', 'literature', 'music', 'politics', 'science'
-DOMAINS = [AI, CONLL2003, LIT, MUSIC, POL, SCIENCE]
+DOMAINS = [AI, LIT, MUSIC, POL, SCIENCE]
 
 
 def get_exp_name(args):
@@ -56,6 +56,7 @@ def cli():
 @click.option("--train-batch-size", default=2)
 @click.option("--num-train-epochs", default=5.0)
 @click.option("--do-eval/--no-eval", default=True)
+@click.option("--eval-all/--one-eval", default=False)
 @click.option("--eval-batch-size", default=32)
 @click.option("--n-example-per-label", default=0)
 @click.option("--train-on-dev-set", is_flag=True)
@@ -70,6 +71,7 @@ def run(common_args, **task_args):
     args.train_domains = [domain.lower().strip() for domain in args.train_domains.split(",")]
     assert all(domain in DOMAINS for domain in args.train_domains), \
         f'At least one of the domains {args.train_domains} not in {DOMAINS}'
+
     domain_label_indices, domain_features, all_entities = \
         load_domain_features(args, src_domain=args.dev_domain,
                              trg_domain=args.test_domain,
@@ -135,6 +137,29 @@ def run(common_args, **task_args):
         results.update({f"train_{k}": v for k, v in evaluate(args, zero, "train", all_entities, train_output_file).items()})
         results.update({f"dev_{k}": v for k, v in evaluate(args, zero, "dev", all_entities, dev_output_file).items()})
         results.update({f"test_{k}": v for k, v in evaluate(args, zero, "test", all_entities, test_output_file).items()})
+
+        if args.eval_all:
+            for test_domain in DOMAINS:
+                args.test_domain = test_domain
+
+                domain_label_indices, domain_features, all_entities = \
+                    load_domain_features(args, src_domain=args.dev_domain,
+                                         trg_domain=test_domain,
+                                         data_dir=args.data_dir,
+                                         embed=args.embed)
+                _, _, _, processor_new = load_and_cache_examples(args, "train", all_entities)
+
+                luke = LukeForNamedEntityRecognition(args, len(processor_new.get_labels()))
+                luke.load_state_dict(torch.load(luke_path, map_location="cpu"))
+                luke.to(args.device)
+
+                zero = Zero(args, luke, domain_label_indices, domain_features)
+                zero.load_state_dict(torch.load(dozen_path, map_location="cpu"))
+                zero.to(args.device)
+
+                print(f'\n\nEvaluating {test_domain}\n\n')
+                evals = evaluate(args, zero, "test", all_entities, test_output_file).items()
+                results.update({f"test_{test_domain}_{k}": v for k, v in evals})
 
     logger.info("Results: %s", json.dumps(results, indent=2, sort_keys=True))
     args.experiment.log_metrics(results)
