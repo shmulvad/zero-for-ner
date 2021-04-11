@@ -150,7 +150,7 @@ class NERProcessor(object):
         return list(self._create_examples(self._read_data(
             os.path.join(self.data_dir, self.dev_domain, "dev.new.txt"), self.dev_domain), "dev"))
 
-    def get_few_shot_train_examples(self, n_example_per_label):
+    def get_few_shot_train_examples(self, n_example_per_label, add_source=True):
         target_train_examples = list(self._create_examples(self._read_data(
             os.path.join(self.data_dir, self.test_domain, "train.new.txt"), self.test_domain), "train"))
         random.Random(self.seed).shuffle(target_train_examples)
@@ -167,8 +167,11 @@ class NERProcessor(object):
                         break
             if sum(label_cnt.values()) == 0:
                 break
-        source_train_examples = self.get_train_examples()
-        all_train_examples = source_train_examples + reduced_target_train_examples
+        if add_source:
+            source_train_examples = self.get_train_examples()
+            all_train_examples = source_train_examples + reduced_target_train_examples
+        else:
+            all_train_examples = reduced_target_train_examples
         return all_train_examples
 
     def get_test_examples(self):
