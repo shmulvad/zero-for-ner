@@ -28,8 +28,9 @@ AI, CONLL2003, LIT, MUSIC, POL, SCIENCE = \
 DOMAINS = [AI, LIT, MUSIC, POL, SCIENCE]
 
 
-def get_exp_name(task_name):
-    return "{}-{}".format(task_name, datetime.now().strftime("%D-%H-%M-%S").replace("/", "_"))
+def get_exp_name(args):
+    return "{}-{}-{}-{}-{}".format(args.task_name, datetime.now().strftime("%D-%H-%M-%S").replace("/", "_"),
+                                   args.dev_domain, args.test_domain, args.n_example_per_label)
 
 
 @click.group(name="ner")
@@ -57,6 +58,7 @@ def cli():
 @click.option("--do-eval/--no-eval", default=True)
 @click.option("--eval-all/--one-eval", default=False)
 @click.option("--eval-batch-size", default=32)
+@click.option("--n-example-per-label", default=0)
 @click.option("--train-on-dev-set", is_flag=True)
 @click.option("--seed", default=35)
 @trainer_args
@@ -64,7 +66,7 @@ def cli():
 def run(common_args, **task_args):
     common_args.update(task_args)
     args = Namespace(**common_args)
-    args.exp_name = get_exp_name(args.task_name)
+    args.exp_name = get_exp_name(args)
 
     args.train_domains = [domain.lower().strip() for domain in args.train_domains.split(",")]
     assert all(domain in DOMAINS for domain in args.train_domains), \
@@ -84,7 +86,8 @@ def run(common_args, **task_args):
     mask_emb = entity_emb[args.entity_vocab[MASK_TOKEN]].unsqueeze(0)
     args.model_weights["entity_embeddings.entity_embeddings.weight"] = torch.cat([entity_emb[:1], mask_emb])
 
-    train_source_dataloader, _, _, processor = load_and_cache_examples(args, "train", all_entities)
+    train_source_dataloader, _, _, processor = load_and_cache_examples(args, "train", all_entities,
+                                                                       n_example_per_label=args.n_example_per_label)
     train_target_dataloader, _, _, _ = load_and_cache_examples(args, "test", all_entities)
     results = {}
 
@@ -108,7 +111,7 @@ def run(common_args, **task_args):
         if args.local_rank in (0, -1):
             os.makedirs(os.path.join(args.output_dir, args.exp_name), exist_ok=True)
             logger.info("Saving the model checkpoint to %s", args.output_dir)
-            dozen_path, luke_path, rgcn_path = get_saved_paths(args, tag="last")
+            dozen_path, luke_path, rgcn_path = get_saved_paths(args, tag="best")
             torch.save(pretrained_luke.state_dict(), luke_path)
             torch.save(dozen.state_dict(), dozen_path)
 
@@ -118,7 +121,7 @@ def run(common_args, **task_args):
     torch.cuda.empty_cache()
 
     if args.do_eval:
-        dozen_path, luke_path, rgcn_path = get_saved_paths(args, tag="last")
+        dozen_path, luke_path, rgcn_path = get_saved_paths(args, tag="best")
 
         luke = LukeForNamedEntityRecognition(args, len(processor.get_labels()))
         luke.load_state_dict(torch.load(luke_path, map_location="cpu"))
@@ -128,12 +131,12 @@ def run(common_args, **task_args):
         zero.load_state_dict(torch.load(dozen_path, map_location="cpu"))
         zero.to(args.device)
 
-        train_output_file = os.path.join(args.output_dir, "train_predictions.txt")
-        dev_output_file = os.path.join(args.output_dir, "dev_predictions.txt")
-        test_output_file = os.path.join(args.output_dir, "test_predictions.txt")
-        results.update({f"train_{k}": v for k, v in evaluate(args, zero, "train", train_output_file).items()})
-        results.update({f"dev_{k}": v for k, v in evaluate(args, zero, "dev", dev_output_file).items()})
-        results.update({f"test_{k}": v for k, v in evaluate(args, zero, "test", test_output_file).items()})
+        train_output_file = os.path.join(args.output_dir, args.exp_name, "train_predictions.txt")
+        dev_output_file = os.path.join(args.output_dir, args.exp_name, "dev_predictions.txt")
+        test_output_file = os.path.join(args.output_dir, args.exp_name, "test_predictions.txt")
+        results.update({f"train_{k}": v for k, v in evaluate(args, zero, "train", all_entities, train_output_file).items()})
+        results.update({f"dev_{k}": v for k, v in evaluate(args, zero, "dev", all_entities, dev_output_file).items()})
+        results.update({f"test_{k}": v for k, v in evaluate(args, zero, "test", all_entities, test_output_file).items()})
 
         if args.eval_all:
             for test_domain in DOMAINS:
@@ -155,12 +158,12 @@ def run(common_args, **task_args):
                 zero.to(args.device)
 
                 print(f'\n\nEvaluating {test_domain}\n\n')
-                evals = evaluate(args, zero, "test", test_output_file).items()
+                evals = evaluate(args, zero, "test", all_entities, test_output_file).items()
                 results.update({f"test_{test_domain}_{k}": v for k, v in evals})
 
     logger.info("Results: %s", json.dumps(results, indent=2, sort_keys=True))
     args.experiment.log_metrics(results)
-    with open(os.path.join(args.output_dir, "results.json"), "w") as f:
+    with open(os.path.join(args.output_dir, args.exp_name, "results.json"), "w") as f:
         json.dump(results, f)
 
     return results

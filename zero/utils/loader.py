@@ -114,14 +114,19 @@ def get_saved_paths(args, tag=None):
     return dozen_path, luke_path, rgcn_path
 
 
-def load_and_cache_examples(args, fold, inter_domain_entities, random_sampling=True):
+def load_and_cache_examples(args, fold, inter_domain_entities, random_sampling=True, n_example_per_label=0):
     if args.local_rank not in (-1, 0) and fold == "train":
         torch.distributed.barrier()
 
     processor = NERProcessor(os.path.join(args.data_dir, "ner"),
-                             args.train_domains, args.dev_domain, args.test_domain)
+                             args.train_domains, args.dev_domain, args.test_domain,
+                             seed=args.seed)
     if fold == "train":
-        examples = processor.get_train_examples()
+        if n_example_per_label == 0:
+            examples = processor.get_train_examples()
+        else:
+            examples = processor.get_few_shot_train_examples(n_example_per_label, add_source=args.task_name == "zero")
+        print("Load {} train examples".format(len(examples)))
     elif fold == "dev":
         examples = processor.get_dev_examples()
     else:
@@ -133,24 +138,24 @@ def load_and_cache_examples(args, fold, inter_domain_entities, random_sampling=T
     domain_label_map = processor.get_domain_labels()
 
     bert_model_name = args.model_config.bert_model_name
+    params = [
+        bert_model_name.split("-")[0],
+        str(args.max_seq_length),
+        str(args.max_entity_length),
+        str(args.max_mention_length),
+        str(args.train_on_dev_set),
+        str(args.n_example_per_label),
+        "train_{}".format("_".join(args.train_domains)),
+        "dev_{}".format(args.dev_domain),
+        "test_{}".format(args.test_domain),
+        fold,
+    ]
+    if args.task_name == "luke":
+        params = ["luke"] + params
 
     cache_file = os.path.join(
         args.data_dir,
-        "cached_"
-        + "_".join(
-            (
-                bert_model_name.split("-")[0],
-                str(args.max_seq_length),
-                str(args.max_entity_length),
-                str(args.max_mention_length),
-                str(args.train_on_dev_set),
-                "train_{}".format("_".join(args.train_domains)),
-                "dev_{}".format(args.dev_domain),
-                "test_{}".format(args.test_domain),
-                fold,
-            )
-        )
-        + ".pkl",
+        "cached_" + "_".join(params) + ".pkl",
     )
     inter_domain_map = {entity: i+1 for i, entity in enumerate(inter_domain_entities)}
 
@@ -158,7 +163,7 @@ def load_and_cache_examples(args, fold, inter_domain_entities, random_sampling=T
         logger.info("Loading features from the cached file %s", cache_file)
         features = torch.load(cache_file)
     else:
-        logger.info("Creating features from the dataset...")
+        logger.info("Creating features from the dataset and save to the cached file %s", cache_file)
 
         features = convert_examples_to_features(
             examples, inter_domain_map, domain_label_map, args.tokenizer, args.max_seq_length, args.max_entity_length, args.max_mention_length

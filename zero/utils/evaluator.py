@@ -8,8 +8,8 @@ from zero.utils.loader import load_and_cache_examples
 
 
 def evaluate(args, model, fold, all_entities, output_file=None, return_report=False):
-    dataloader, examples, features, processor = \
-        load_and_cache_examples(args, fold, all_entities)
+    dataloader, examples, features, processor = load_and_cache_examples(args, fold, all_entities,
+                                                                        n_example_per_label=args.n_example_per_label)
     domain_label_map = processor.get_domain_labels()
     all_predictions = defaultdict(dict)
 
@@ -45,10 +45,10 @@ def evaluate(args, model, fold, all_entities, output_file=None, return_report=Fa
 
         predicted_sequence = ["O"] * len(example.words)
         for _, span, label in sorted(doc_results, key=lambda o: o[0], reverse=True):
-            if all([o == "O" for o in predicted_sequence[span[0] : span[1]]]):
+            if all([o == "O" for o in predicted_sequence[span[0]: span[1]]]):
                 predicted_sequence[span[0]] = "B-" + label
                 if span[1] - span[0] > 1:
-                    predicted_sequence[span[0] + 1 : span[1]] = ["I-" + label] * (span[1] - span[0] - 1)
+                    predicted_sequence[span[0] + 1: span[1]] = ["I-" + label] * (span[1] - span[0] - 1)
 
         final_predictions += predicted_sequence
         final_labels += example.labels

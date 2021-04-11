@@ -24,15 +24,22 @@ class Zero(nn.Module):
 
         self.dropout = nn.Dropout(args.model_config.hidden_dropout_prob)
 
-        feature_size = domain_features.shape[1]
+        if args.task_name == "zero":
+            feature_size = domain_features.shape[1]
 
-        self.fcn_input = args.model_config.hidden_size * 3
-        self.fcn_output = feature_size
+            self.fcn_input = args.model_config.hidden_size * 3
+            self.fcn_output = feature_size
 
-        self.null_label_feature = nn.Parameter(torch.FloatTensor(1, self.fcn_output)).to(self.args.device)
-        nn.init.xavier_uniform_(self.null_label_feature)
-        self.null_concept_feature = nn.Parameter(torch.FloatTensor(1, self.fcn_output)).to(self.args.device)
-        nn.init.xavier_uniform_(self.null_concept_feature)
+            self.null_label_feature = nn.Parameter(torch.FloatTensor(1, self.fcn_output)).to(self.args.device)
+            nn.init.xavier_uniform_(self.null_label_feature)
+            self.null_concept_feature = nn.Parameter(torch.FloatTensor(1, self.fcn_output)).to(self.args.device)
+            nn.init.xavier_uniform_(self.null_concept_feature)
+        elif args.task_name == "luke":
+            self.fcn_input = args.model_config.hidden_size * 3
+            self.fcn_output = len(label_indices[args.dev_domain]) + 1  # +1 to account for nil
+        else:
+            raise ValueError("Unsupported task {}".format(args.task_name))
+
         self.fcn = nn.Linear(self.fcn_input, self.fcn_output)
 
     def luke_encode(self, tag, **kwargs):
@@ -108,8 +115,25 @@ class Zero(nn.Module):
 
         return masked_outputs
 
+    def forward_luke(self, **kwargs):
+        word_hidden_states, entity_hidden_states, batch_size, hidden_size = \
+            self.luke_encode("source", **kwargs)
+
+        start_states = self.gather_states(word_hidden_states, kwargs["source_entity_start_positions"], hidden_size)
+        end_states = self.gather_states(word_hidden_states, kwargs["source_entity_end_positions"], hidden_size)
+
+        feature_vector = torch.cat([start_states, end_states, entity_hidden_states], dim=2)
+        logits = self.fcn(feature_vector)
+
+        return logits, self.fcn_output
+
     def forward(self, **kwargs):
-        outputs = self.forward_basic(**kwargs)
+        if self.args.task_name == "zero":
+            outputs = self.forward_basic(**kwargs)
+        elif self.args.task_name == "luke":
+            outputs = self.forward_luke(**kwargs)
+        else:
+            raise ValueError("Unsupported task {}".format(self.args.task_name))
         logits, output_size = outputs[0], outputs[1]
         if "source_labels" not in kwargs or kwargs["source_labels"] is None:
             return logits

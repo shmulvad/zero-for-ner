@@ -6,6 +6,7 @@ import unicodedata
 from transformers.tokenization_roberta import RobertaTokenizer
 from nltk.corpus import stopwords
 from collections import Counter
+import random
 from tqdm import tqdm
 
 stop_words = set(stopwords.words('english'))
@@ -128,7 +129,7 @@ class NERDAProcessor(object):
 
 class NERProcessor(object):
 
-    def __init__(self, data_dir, train_domains, dev_domain, test_domain):
+    def __init__(self, data_dir, train_domains, dev_domain, test_domain, seed):
         self.data_dir = data_dir
         assert len(np.setdiff1d(train_domains, DOMAIN_LIST)) == 0
         assert dev_domain in DOMAIN_LIST
@@ -136,6 +137,7 @@ class NERProcessor(object):
         self.train_domains = train_domains
         self.dev_domain = dev_domain
         self.test_domain = test_domain
+        self.seed = seed
 
     def get_train_examples(self):
         all_train_examples = []
@@ -147,6 +149,30 @@ class NERProcessor(object):
     def get_dev_examples(self):
         return list(self._create_examples(self._read_data(
             os.path.join(self.data_dir, self.dev_domain, "dev.new.txt"), self.dev_domain), "dev"))
+
+    def get_few_shot_train_examples(self, n_example_per_label, add_source=True):
+        target_train_examples = list(self._create_examples(self._read_data(
+            os.path.join(self.data_dir, self.test_domain, "train.new.txt"), self.test_domain), "train"))
+        random.Random(self.seed).shuffle(target_train_examples)
+        label_cnt = {label: n_example_per_label for label in DOMAIN_LABELS[self.test_domain]
+                     if label != 'nil'}
+        reduced_target_train_examples = []
+        for example in target_train_examples:
+            for label in example.labels:
+                if label.startswith("B") or label.startswith("I"):
+                    label = label[2:]
+                    if label_cnt[label] > 0:
+                        label_cnt[label] -= 1
+                        reduced_target_train_examples.append(example)
+                        break
+            if sum(label_cnt.values()) == 0:
+                break
+        if add_source:
+            source_train_examples = self.get_train_examples()
+            all_train_examples = source_train_examples + reduced_target_train_examples
+        else:
+            all_train_examples = reduced_target_train_examples
+        return all_train_examples
 
     def get_test_examples(self):
         return list(self._create_examples(self._read_data(
