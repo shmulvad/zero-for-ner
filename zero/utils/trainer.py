@@ -218,6 +218,7 @@ class Trainer(object):
                     save_json(best_reports, os.path.join(self.args.output_dir, self.args.exp_name, "best_reports.json"))
                     if self.save_model:
                         dozen_path, luke_path, rgcn_path = get_saved_paths(self.args, tag="best")
+                        print("Save dozen model to {}".format(dozen_path))
                         torch.save(model.luke.state_dict(), luke_path)
                         torch.save(model.state_dict(), dozen_path)
 

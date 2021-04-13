@@ -17,7 +17,7 @@ class Zero(nn.Module):
 
         self.label_indices = label_indices
 
-        self.features = torch.FloatTensor(domain_features).to(args.device)
+        self.features = nn.Parameter(torch.FloatTensor(domain_features), requires_grad=False)
         self.domain2index = {
             domain: i for i, domain in enumerate(self.all_domains)
         }
@@ -30,10 +30,6 @@ class Zero(nn.Module):
             self.fcn_input = args.model_config.hidden_size * 3
             self.fcn_output = feature_size
 
-            self.null_label_feature = nn.Parameter(torch.FloatTensor(1, self.fcn_output)).to(self.args.device)
-            nn.init.xavier_uniform_(self.null_label_feature)
-            self.null_concept_feature = nn.Parameter(torch.FloatTensor(1, self.fcn_output)).to(self.args.device)
-            nn.init.xavier_uniform_(self.null_concept_feature)
         elif args.task_name == "luke":
             self.fcn_input = args.model_config.hidden_size * 3
             self.fcn_output = len(label_indices[args.dev_domain]) + 1  # +1 to account for nil
@@ -41,6 +37,10 @@ class Zero(nn.Module):
             raise ValueError("Unsupported task {}".format(args.task_name))
 
         self.fcn = nn.Linear(self.fcn_input, self.fcn_output)
+        self.null_label_feature = nn.Parameter(torch.FloatTensor(1, self.fcn_output))
+        nn.init.xavier_uniform_(self.null_label_feature)
+        self.null_concept_feature = nn.Parameter(torch.FloatTensor(1, self.fcn_output))
+        nn.init.xavier_uniform_(self.null_concept_feature)
 
     def luke_encode(self, tag, **kwargs):
         encoder_outputs = self.luke.encode(kwargs["{}_word_ids".format(tag)],

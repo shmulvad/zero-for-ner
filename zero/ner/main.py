@@ -61,12 +61,13 @@ def cli():
 @click.option("--n-example-per-label", default=0)
 @click.option("--train-on-dev-set", is_flag=True)
 @click.option("--seed", default=35)
+@click.option("--exp-name", default=None)
 @trainer_args
 @click.pass_obj
 def run(common_args, **task_args):
     common_args.update(task_args)
     args = Namespace(**common_args)
-    args.exp_name = get_exp_name(args)
+    args.exp_name = get_exp_name(args) if args.exp_name is None else args.exp_name
 
     args.train_domains = [domain.lower().strip() for domain in args.train_domains.split(",")]
     assert all(domain in DOMAINS for domain in args.train_domains), \
@@ -111,7 +112,7 @@ def run(common_args, **task_args):
         if args.local_rank in (0, -1):
             os.makedirs(os.path.join(args.output_dir, args.exp_name), exist_ok=True)
             logger.info("Saving the model checkpoint to %s", args.output_dir)
-            dozen_path, luke_path, rgcn_path = get_saved_paths(args, tag="best")
+            dozen_path, luke_path, rgcn_path = get_saved_paths(args, tag="last")
             torch.save(pretrained_luke.state_dict(), luke_path)
             torch.save(dozen.state_dict(), dozen_path)
 

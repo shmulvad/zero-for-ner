@@ -73,9 +73,9 @@ def evaluate(args, model, fold, all_entities, output_file=None, return_report=Fa
     report = seqeval.metrics.classification_report(final_labels, final_predictions, digits=4)
     print(report)
     metrics = dict(
-        f1=seqeval.metrics.f1_score(final_labels, final_predictions),
-        precision=seqeval.metrics.precision_score(final_labels, final_predictions),
-        recall=seqeval.metrics.recall_score(final_labels, final_predictions),
+        f1=seqeval.metrics.f1_score(final_labels, final_predictions, average="micro"),
+        precision=seqeval.metrics.precision_score(final_labels, final_predictions, average="micro"),
+        recall=seqeval.metrics.recall_score(final_labels, final_predictions, average="micro"),
     )
 
     if return_report:
