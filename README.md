@@ -1,19 +1,33 @@
-# Solving Zero-Shot Learning in Named Entity Recognition with Common Sense Knowledge
+# Zero-Shot Learning in Named Entity Recognition with Common Sense Knowledge
 
-## Poster
+Associated code for the paper [Zero-Shot Learning in Named Entity Recognition with Common Sense Knowledge][paper].
 
-[![Cick on the poster for higher resolution](img/ner-poster-img.jpg)][poster]
+## Description
 
+[![Click on the poster for higher resolution](img/ner-poster-img.jpg)][poster]
+
+
+## Citation
+
+If you find that this project helps your research, please consider citing the related paper:
+
+```bibtex
+@misc{vanhoang2021zeroshot,
+      title={Zero-Shot Learning in Named-Entity Recognition with External Knowledge}, 
+      author={Nguyen Van Hoang and Soeren Hougaard Mulvad and Dexter Neo Yuan Rong and Yang Yue},
+      year={2021},
+      eprint={2111.07734},
+      archivePrefix={arXiv},
+      primaryClass={cs.AI}
+}
+```
 
 ## Attributions
 
 In this project, we make extensive use of [LUKE] and the [CrossNER dataset].
 
-## About
 
-This is our project for the [CS5260 Neural Networks and Deep Learning II][CS5260] module at NUS.
-
+[paper]: https://arxiv.org/pdf/2111.07734.pdf
 [poster]: ./ner-poster.pdf
 [LUKE]: https://arxiv.org/abs/2010.01057
 [CrossNER dataset]: https://arxiv.org/abs/2012.04373
-[CS5260]: https://nusmods.com/modules/CS5260/neural-networks-and-deep-learning-ii
